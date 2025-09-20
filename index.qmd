@@ -1,166 +1,338 @@
 ---
 title: "Lab: List Processing"
-author: "Your Name Here"
+author: "Grant Bauman"
 format: html
 number-sections: true
 number-depth: 2
 ---
 
 ::: callout
-You can see the purpose of this assignment as well as the skills and knowledge you should be using and acquiring, in the [Transparency in Learning and Teaching (TILT)](tilt.qmd) document in this repository. The TILT document also contains a checklist for self-reflection that will provide some guidance on how the assignment will be graded. 
+You can see the purpose of this assignment as well as the skills and knowledge you should be using and acquiring, in the [Transparency in Learning and Teaching (TILT)](tilt.qmd) document in this repository. The TILT document also contains a checklist for self-reflection that will provide some guidance on how the assignment will be graded.
 :::
 
 # Data Source
 
-JSON data files for this assignment were obtained from the TVMaze API for three different  Doctor Who series as well as two different spin-offs. 
+JSON data files for this assignment were obtained from the TVMaze API for three different Doctor Who series as well as two different spin-offs.
 
-- Dr. Who [2023-2025](https://www.tvmaze.com/shows/72724/doctor-who)
-- Dr. Who [2005-2022](https://www.tvmaze.com/shows/210/doctor-who)
-- Dr. Who [1963-1996](https://www.tvmaze.com/shows/766/doctor-who)
-- [The Sarah Jane Adventures (2007-2020)](https://www.tvmaze.com/shows/970/the-sarah-jane-adventures)
-- [Torchwood (2006-2011)](https://www.tvmaze.com/shows/659/torchwood)
-- [Torchwood: Web of Lies (2011)](https://www.tvmaze.com/shows/26694/torchwood-web-of-lies)
+-   Dr. Who [2023-2025](https://www.tvmaze.com/shows/72724/doctor-who)
+-   Dr. Who [2005-2022](https://www.tvmaze.com/shows/210/doctor-who)
+-   Dr. Who [1963-1996](https://www.tvmaze.com/shows/766/doctor-who)
+-   [The Sarah Jane Adventures (2007-2020)](https://www.tvmaze.com/shows/970/the-sarah-jane-adventures)
+-   [Torchwood (2006-2011)](https://www.tvmaze.com/shows/659/torchwood)
+-   [Torchwood: Web of Lies (2011)](https://www.tvmaze.com/shows/26694/torchwood-web-of-lies)
 
 # Warming Up
 
-For this portion of the assignment, only work with the canonical Dr. Who files (drwho2023.json, drwho2005.json, drwho1963.json). 
+For this portion of the assignment, only work with the canonical Dr. Who files (drwho2023.json, drwho2005.json, drwho1963.json).
 
 ## Parse the file
 
-Add a code chunk that will read each of the JSON files in. 
-Store the data in a `drwhoYYYY` object, where `YYYY` is the first year the series  began to air. 
-How are the data objects stored?
+Add a code chunk that will read each of the JSON files in. Store the data in a `drwhoYYYY` object, where `YYYY` is the first year the series began to air. How are the data objects stored?
 
----
+```{r}
+library(jsonlite)
+
+drwho2023 <- fromJSON("drwho-72724.json", simplifyVector = TRUE, flatten = TRUE)
+drwho2005 <- fromJSON("drwho-210.json",    simplifyVector = TRUE, flatten = TRUE)
+drwho1963 <- fromJSON("drwho-766.json",    simplifyVector = TRUE, flatten = TRUE)
+
+
+print("These are stored as dataframes")
+
+
+```
+
+------------------------------------------------------------------------
 
 ## Examining List Data Structures
 
 Create a nested markdown list showing what variables are nested at each level of the JSON file. Include an 'episode' object that is a stand-in for a generic episode (e.g. don't create a list with all 700+ episodes in it, just show what a single episode has). Make sure you use proper markdown formatting to ensure that the lists are rendered properly when you compile your document.
 
-Hint: The `prettify()` function in the R package `jsonlite` will spit out a better-formatted version of a JSON file. 
+Hint: The `prettify()` function in the R package `jsonlite` will spit out a better-formatted version of a JSON file.
 
-----
+------------------------------------------------------------------------
 
-List here
+-   episode
+    -   id
+    -   url
+    -   name
+    -   season
+    -   number
+    -   type
+    -   airdate
+    -   airtime
+    -   airstamp
+    -   runtime
+    -   rating
+        -   average
+    -   image
+        -   medium
+        -   original
+    -   summary
+    -   links
+        -   self
+            -   href
+        -   show
+            -   href
+            -   name
 
-----
+------------------------------------------------------------------------
 
 Is there any information stored in the list structure that you feel is redundant? If so, why?
 
-
+we have airdate, airtime, airstamp which seems a bit redundant.
 
 ## Develop A Strategy
 
-Consider what information you would need to examine the structure of Dr. Who episodes over time (show runtime, season length, specials) as well as the ratings, combining information across all three data files. 
+Consider what information you would need to examine the structure of Dr. Who episodes over time (show runtime, season length, specials) as well as the ratings, combining information across all three data files.
 
-Sketch one or more rectangular data tables that look like your expected output. Remember that if you link to an image, you must link to something with a picture extension (`.png`, `.jpg`), and if you reference a file it should be using a local path and you must also add the picture to your git repository. 
+Sketch one or more rectangular data tables that look like your expected output. Remember that if you link to an image, you must link to something with a picture extension (`.png`, `.jpg`), and if you reference a file it should be using a local path and you must also add the picture to your git repository.
 
----
-
-Sketch goes here
-
----
+|  |
+|----|
+| \|series\|season\|episode_number\|type \|title\|runtime \|airdate \|rating\| |
+| \|Drwho \| 1 \| 2 \| regular \| ? \| 35 \| 12-25-05 \| 1.5\| |
 
 What operations will you need to perform to get the data into a form matching your sketch? Make an ordered list of steps you need to take.
 
----
+------------------------------------------------------------------------
 
-1. ... fill me in
-2. ...
-3. ...
+1.  read the files
+2.  select the fields from files
+3.  combine into one df
 
 ## Implement Your Strategy
 
-Add a code chunk that will convert the JSON files into the table(s) you sketched above. 
-Make sure that the resulting tables have the correct variable types (e.g., dates should not be stored as character variables).
+Add a code chunk that will convert the JSON files into the table(s) you sketched above. Make sure that the resulting tables have the correct variable types (e.g., dates should not be stored as character variables).
+
+```{r}
+library(dplyr)
+
+episodes <- bind_rows(
+  mutate(drwho1963, series = "Doctor Who (1963)"),
+  mutate(drwho2005, series = "Doctor Who (2005)"),
+  mutate(drwho2023, series = "Doctor Who (2023)")
+) %>%
+  select(
+    series = series,
+    season = season,
+    episode = number,
+    type = type,
+    title = name,
+    runtime = runtime,
+    airdate = airdate,
+    rating = `rating.average`
+  )
+
+head(episodes, 5)
+
+
+```
 
 Print out the first 5 rows of each table that you create (but no more)!
 
 ## Examining Episode Air Dates
 
-Visually represent the length of time between air dates of adjacent episodes within the same season, across all seasons of Dr. Who. You may need to create a factor to indicate which Dr. Who series is indicated, as there will be a Season 1 for each of the series. 
-Your plot must have appropriate labels and a title.
+Visually represent the length of time between air dates of adjacent episodes within the same season, across all seasons of Dr. Who. You may need to create a factor to indicate which Dr. Who series is indicated, as there will be a Season 1 for each of the series. Your plot must have appropriate labels and a title.
 
----
+------------------------------------------------------------------------
 
 code chunk here
 
----
+```{r}
+library(dplyr)
+library(ggplot2)
+
+episodes$airdate <- as.Date(episodes$airdate)
+
+gaps <- episodes %>%
+  group_by(series, season) %>%
+  mutate(gap_days = c(NA, as.integer(diff(airdate))))
+
+avgerage_gaps <- gaps %>%
+  filter(!is.na(gap_days)) %>%
+  group_by(series, season) %>%
+  summarize(avgerage_gap_days = mean(gap_days), .groups = "drop")
+
+ggplot(avgerage_gaps, aes(x = factor(season), y = avgerage_gap_days)) +
+  geom_col() +
+  facet_wrap(~ series, scales = "free_x") +
+  labs(
+    title = "Average Days Between Episode",
+    x = "Season",
+    y = "Average Days")
+
+
+```
+
+------------------------------------------------------------------------
 
 In 2-3 sentences, explain what conclusions you might draw from the data. What patterns do you notice? Are there data quality issues?
+
+It looks like overall, it was pretty common for DRwho to release once a week. Seems like 2005 had some issues in seasons 6 and 7. in the first series season 19-21 released very quickly.
 
 # Timey-Wimey Series and Episodes
 
 ## Setting Up
 
-In this section of the assignment, you will work with all of the provided JSON files. 
-Use a functional programming approach to read in all of the files and bind them together. 
+In this section of the assignment, you will work with all of the provided JSON files. Use a functional programming approach to read in all of the files and bind them together.
 
-----
+------------------------------------------------------------------------
 
 functional code goes here
 
-----
+```{r}
 
-Then, use the processing code you wrote for the previous section to perform appropriate data cleaning steps. 
-At the end of the chunk, your data should be in a reasonably tidy, rectangular form with appropriate data types. 
-Call this rectangular table `whoverse`. 
+files <- list.files(".", pattern = "\\.json")
 
-----
+read_json <- function(path) {
+  df <- fromJSON(path, simplifyVector = TRUE, flatten = TRUE)
+}
 
-Cleaning code goes here
+whoverse <- bind_rows(lapply(files, read_json))
+print('Im leaving as in because I dont know what info I will want for final part yet')
+```
 
-----
+------------------------------------------------------------------------
 
+Then, use the processing code you wrote for the previous section to perform appropriate data cleaning steps. At the end of the chunk, your data should be in a reasonably tidy, rectangular form with appropriate data types. Call this rectangular table `whoverse`.
 
 ## Air Time
 
-Investigate the air time of the episodes relative to the air date, series, and season.
-It may help to know that the [watershed](https://en.wikipedia.org/wiki/Watershed_(broadcasting)) period in the UK is 9:00pm - 5:30am. 
-Content that is unsuitable for minors may only be shown during this window.
-What conclusions do you draw about the target audience for each show? 
+Investigate the air time of the episodes relative to the air date, series, and season. It may help to know that the [watershed](https://en.wikipedia.org/wiki/Watershed_(broadcasting)) period in the UK is 9:00pm - 5:30am. Content that is unsuitable for minors may only be shown during this window. What conclusions do you draw about the target audience for each show?
 
 How can you explain any shows in the Dr. Who universe which do not have airtimes provided?
 
+It looks like drwho and sarahjane was aired around 5, this means it's more family friendly. Torchwood however was shown after 9pm, this must mean its more for adult audiences.
+
 ## Another Layer of JSON
 
-Use the show URL (`_links` > `show` > `href`) to read in the JSON file for each show. 
-As with scraping, it is important to be polite and not make unnecessary server calls, so pre-process the data to ensure that you only make one server call for each show.
-You should use a functional programming approach when reading in these files. 
+Use the show URL (`_links` \> `show` \> `href`) to read in the JSON file for each show. As with scraping, it is important to be polite and not make unnecessary server calls, so pre-process the data to ensure that you only make one server call for each show. You should use a functional programming approach when reading in these files.
 
-----
+------------------------------------------------------------------------
 
 Read in JSON files from URLs here
 
-----
+```{r}
+library(jsonlite)
+library(httr)
+library(purrr)
 
-Process the JSON files using a functional approach and construct an appropriate table for the combined data you've acquired during this step (no need to join the data with the full `whoverse` episode-level data). 
+show_urls <- unique(na.omit(whoverse[["_links.show.href"]]))
 
-----
+read_show_json <- function(url) {
+  link <- GET(url, user_agent("gbauman2@unl.edu"))
+  content(link, as = "text")
+}
+
+show_json_text <- map(show_urls, read_show_json)
+```
+
+------------------------------------------------------------------------
+
+Process the JSON files using a functional approach and construct an appropriate table for the combined data you've acquired during this step (no need to join the data with the full `whoverse` episode-level data).
+
+```{r}
+library(dplyr)
+
+library(httr)
+library(jsonlite)
+library(purrr)
+library(tibble)
+library(dplyr)
+
+read_show_json <- function(url) {
+  response <- content(GET(url, user_agent("gbauman2@unl.edu")), as = "text")
+  json_data <- fromJSON(response, flatten = TRUE, simplifyVector = TRUE)
+
+  tibble(
+    show_url = json_data$`_links$self$href`,
+    id = json_data$id,
+    name = json_data$name,
+    language = json_data$language,
+    status = json_data$status,
+    premiered = json_data$premiered,
+    ended = json_data$ended,
+    runtime = json_data$averageRuntime,
+    rating = json_data$rating,
+    network = json_data$network$name,
+    web_channel = json_data$webChannel$name,
+    url = json_data$url,
+    summary = json_data$summary
+  )
+}
+
+```
+
+------------------------------------------------------------------------
 
 Process JSON files to make a table here
 
-----
+```{r}
+shows_tbl <- map_dfr(show_urls, read_show_json)
+```
+
+------------------------------------------------------------------------
 
 What keys would you use to join this data with the `whoverse` episode level data? Explain.
 
-> Explanation
+The URL would be the best key since its directly shared in both. Or maybe the show id number
 
 
 ## Explore!
 
-Use the data you've assembled to answer a question you find interesting about this data.
-Any graphics you make should have appropriate titles and axis labels. 
-Tables should be reasonably concise (e.g. don't show all 900 episodes in a table), generated in a reproducible fashion, and formatted with markdown. 
-Any results (graphics, tables, models) should be explained with at least 2-3 sentences. 
+Use the data you've assembled to answer a question you find interesting about this data. Any graphics you make should have appropriate titles and axis labels. Tables should be reasonably concise (e.g. don't show all 900 episodes in a table), generated in a reproducible fashion, and formatted with markdown. Any results (graphics, tables, models) should be explained with at least 2-3 sentences.
 
-If you're stuck, consider examining the frequency of words in the episode descriptions across different series or seasons. Or, look at the episode guest cast by appending `/guestcast/` to the episode URL and see whether there are common guests across different seasons. 
+If you're stuck, consider examining the frequency of words in the episode descriptions across different series or seasons. Or, look at the episode guest cast by appending `/guestcast/` to the episode URL and see whether there are common guests across different seasons.
 
-----
+------------------------------------------------------------------------
+I want to know how many times popular Drwho villans appear in the show and if they affect the average rating for the episode.
 
-Question goes here
+------------------------------------------------------------------------
 
-----
+Code goes here -- once you output a result, you should explain it using markdown text, and then start a new code chunk to continue your exploration.
 
-Code goes here -- once you output a result, you should explain it using markdown text, and then start a new code chunk to continue your exploration. 
+```{r}
 
+library(dplyr)
+library(stringr)
+library(purrr)
+library(knitr)
+
+
+whoverse <- whoverse %>%
+  mutate(rating  = as.numeric(rating.average))
+
+villains <- data.frame(
+  villain = c("Daleks", "Cybermen", "Weeping Angels"),
+  pattern = c("\\bdaleks?\\b", "\\bcyberman|cybermen\\b", "\\bweeping\\s+angels?\\b"),
+  stringsAsFactors = FALSE
+)
+
+villain_stats <- data.frame(villain=character(), n_episodes=integer(), average_rating=double())
+
+for (i in seq_len(nrow(villains))) {
+  hits <- str_detect(whoverse$summary, regex(villains$pattern[i], ignore_case = TRUE))
+  one_row <- data.frame(
+    villain = villains$villain[i],
+    n_episodes = sum(hits, na.rm = TRUE),
+    average_rating = mean(whoverse$rating[hits], na.rm = TRUE)
+  )
+  villain_stats <- rbind(villain_stats, one_row)
+}
+
+show_average <- mean(whoverse$rating, na.rm = TRUE)
+
+ggplot(villain_stats, aes(villain, average_rating)) +
+  geom_col() +
+  geom_text(aes(label = paste0("n=", n_episodes))) +
+  geom_hline(yintercept = show_average, linetype = "dashed") +
+  labs(
+    title = "Average Rating by Villain",
+    x = "Villain",
+    y = "Average rating")
+
+print("As we can see, Daleks are the most used villan with 76 hits. Next is Cybermen, and weeping angles only have 4. It doesnt seem like the villan affects the rating that much, they are all practically the same. Even the show average is about the same.")
+
+
+```
